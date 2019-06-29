@@ -7,6 +7,7 @@
 #include "timers.h"
 #include "other.h"
 #include "opencpu_onenet.h"
+#include "OneNet.h"
 
 #define APP_SOFTWARE_VERSION "1.0.1"
 
@@ -46,6 +47,19 @@ static void fallSleep(void)
 	while(g_sleep);
 }
 
+static void getCSQ(void)
+{
+    static HalTime_t lastTime = 0;
+    int rssi, rxqual;
+
+    if(HalTimeHasPast(lastTime, 1000))
+    {
+        opencpu_csq(&rssi, &rxqual);
+        HalPrint("CSQ:%d,%d\n", rssi, rxqual);
+        lastTime = HalTime();
+    }
+}
+
 void APPInitialize(void)
 {
 	HalInitialize();
@@ -61,23 +75,40 @@ void APPInitialize(void)
 	}
 	
     opencpu_lock_light_sleep();
+    OneNetInitialize();
+    //OneNetCreate();
+}
+
+static void networkHandle(void)
+{
+    static HalTime_t startConnectTime = 0;
+
+    if(HalNetOnline())
+    {
+        if(!OneNetConnected() && HalTimeHasPast(startConnectTime, 3500))
+        {
+            OneNetStartConnect();
+            startConnectTime = HalTime();
+        }
+    }
+}
+
+static void valueReport(void)
+{
+    static HalTime_t lastReportTime = 0;
+    if(OneNetConnected() && HalTimeHasPast(lastReportTime, 12000))
+    {
+        OneNetDataReport("23.5");
+        lastReportTime = HalTime();
+    }
 }
 
 void APPPoll(void)
 {
-	static uint32_t lastTime = 0;
-	static uint8_t count = 0;
-	if(HalTime() - lastTime > 100)
-	{
-		HalPrint("past 1s...\n");
-		lastTime = HalTime();
-		count++;
-		if(count > 5)
-		{
-			fallSleep();
-			count = 0;
-		}
-	}
+	valueReport();
+	networkHandle();
+	OneNetPoll();
+	getCSQ();
 }
 
 void app_task_main(void)

@@ -50,7 +50,6 @@
 #define NULL ((void *)0)
 #endif
 
-
 typedef void(* rtc_sw_timer_callback_t)(void *);
 typedef enum {
     PING_PACKET_RESULT,

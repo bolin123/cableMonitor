@@ -22,6 +22,16 @@ static void user_uart_callback(hal_uart_callback_event_t status, void *user_data
    }
 }
 
+bool HalNetOnline(void)
+{
+    return (opencpu_cgact() == 1);
+}
+
+void HalReboot(void)
+{
+    opencpu_reboot();
+}
+
 void HalUartPrintf(const char *str, ...)
 {
     static unsigned char s[600]; //This needs to be large enough to store the string TODO Change magic number
