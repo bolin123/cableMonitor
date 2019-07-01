@@ -15,10 +15,13 @@
 #define HalLog(...) do{\
                         HalPrint("%s: ", __FUNCTION__);\
                         HalPrint(__VA_ARGS__); \
-                        HalPrint("");\
+                        HalPrint("\n");\
                         }while(0)
 #define HalTime() xTaskGetTickCount() 
 #define HalTimeHasPast(old, past) ((xTaskGetTickCount() - (old)) > past)
+
+uint16_t HalIntervalGet(void);
+void HalIntervalSet(uint16_t value);
 
 void HalReboot(void);
 bool HalNetOnline(void);

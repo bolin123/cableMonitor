@@ -2,12 +2,21 @@
 
 #define ONE_NET_IP "183.230.40.39"
 #define ONE_NET_OBJID_TEMPERATURE  3303
-#define ONE_NET_RESOURCEID_SENSOR_VALUE "5700"
-#define ONE_NET_OBJID_FREQUENCY  3318
-#define ONE_NET_RESOURCEID_FREQUENCY "6040"
+#define ONE_NET_RESOURCEID_SENSOR_VALUE 5700
+#define ONE_NET_OBJID_FREQUENCY  3310
+#define ONE_NET_RESOURCEID_FREQUENCY 5825
 #define ONE_NET_CONNECT_LIFETIME 3600
 
 static bool g_onenetConnected = false;
+
+static char *num2String(uint32_t num)
+{
+	static char buff[8];
+	
+	buff[0] = '\0';
+	sprintf(buff, "%d", num);
+	return buff;
+}
 
 static void oneNetEventCallback(int event)
 {
@@ -64,6 +73,10 @@ static void oneNetWriteCallback(int mid, int objid,int insid, int resid, int typ
     //TODO
     //...
     HalPrint("write:%d %s\n",len,data);
+	if(objid == ONE_NET_OBJID_FREQUENCY && resid == ONE_NET_RESOURCEID_FREQUENCY)
+	{
+		HalIntervalSet((uint16_t)atoi(data));
+	}
     opencpu_onenet_result(mid, RESULT_204_CHANGED, 0);//操作正确完成返回204
 }
 
@@ -108,6 +121,14 @@ void OneNetDataReport(char *data)
                         0, ONE_NET_RESOURCEID_SENSOR_VALUE, 
                         4, data, 
                         1, -1, 0);
+
+	uint16_t interval = HalIntervalGet();
+	char buff[6];
+	sprintf(buff, "%d", interval);
+	opencpu_onenet_notify(ONE_NET_OBJID_FREQUENCY, 
+                        0, ONE_NET_RESOURCEID_FREQUENCY, 
+                        1, buff, 
+                        1, -1, 0);
 #else
 #endif
 }
@@ -149,9 +170,10 @@ void OneNetCreate(void)
 	#ifdef HAL_DEVICE_TYPE_TEMPERATURE
 	HalLog("add obj");
    	opencpu_onenet_add_obj(ONE_NET_OBJID_TEMPERATURE, 1, "1", 0, 0);
-    opencpu_onenet_discover(ONE_NET_OBJID_TEMPERATURE, 4, ONE_NET_RESOURCEID_SENSOR_VALUE);//返回将用到的资源列表
+	//opencpu_onenet_discover(ONE_NET_OBJID_TEMPERATURE, 9, "5700;5601");
+    opencpu_onenet_discover(ONE_NET_OBJID_TEMPERATURE, 4, num2String(ONE_NET_RESOURCEID_SENSOR_VALUE));//返回将用到的资源列表
 	opencpu_onenet_add_obj(ONE_NET_OBJID_FREQUENCY, 1, "1", 0, 0);
-    opencpu_onenet_discover(ONE_NET_OBJID_FREQUENCY, 4, ONE_NET_RESOURCEID_FREQUENCY);//返回将用到的资源列表
+    opencpu_onenet_discover(ONE_NET_OBJID_FREQUENCY, 4, num2String(ONE_NET_RESOURCEID_FREQUENCY));//返回将用到的资源列表
     #else
     #endif
 

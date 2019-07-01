@@ -24,6 +24,7 @@ static void mesgPrint(void)
 	HalPrint("Run mode:%d\n", get_run_mode());
 	opencpu_rtc_get_time(time);
 	HalPrint("Run time: %s\n", time);
+	HalPrint("Report Interval: %d min\n", HalIntervalGet());
 	HalPrint("----------------------------\n");	
 }
 static volatile bool g_sleep = false;
@@ -60,6 +61,34 @@ static void getCSQ(void)
     }
 }
 
+static void getICCID(void)
+{
+	unsigned char buf[30];
+	int i = 0;
+
+	buf[0] = '\0';
+	while(opencpu_iccid(buf)!= 0)
+	{
+		i++;
+		vTaskDelay(10);
+		if(i>20)
+		{
+			HalPrint("iccid timeout\n");
+			HalReboot();
+			return;
+		}
+	}
+	HalPrint("ICCID:%s\n",buf);
+	
+	memset(buf, 0, sizeof(buf));
+	opencpu_get_imei(buf);
+	HalPrint("IMEI:%s\n", buf);
+	memset(buf, 0, sizeof(buf));
+	opencpu_get_imsi(buf);
+	HalPrint("IMSI:%s\n", buf);
+}
+
+
 void APPInitialize(void)
 {
 	HalInitialize();
@@ -75,6 +104,7 @@ void APPInitialize(void)
 	}
 	
     opencpu_lock_light_sleep();
+	getICCID();
     OneNetInitialize();
     //OneNetCreate();
 }

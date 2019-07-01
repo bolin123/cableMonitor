@@ -55,6 +55,25 @@ static void logUartInit(void)
 	opencpu_uart_open(HAL_LOG_UART_NUM, HAL_UART_BAUDRATE_115200, user_uart_callback);
 }
 
+uint16_t HalIntervalGet(void)
+{
+	uint16_t interval;
+	opencpu_flash_read(0, (uint8_t *)&interval, 2);
+	if(interval > 60*24)
+	{
+		interval = 5; //默认5分钟
+		opencpu_flash_erase(0, 4096);
+		opencpu_flash_write(0, (uint8_t *)&interval, 2);
+	}
+	return interval;
+}
+
+void HalIntervalSet(uint16_t value)
+{
+	opencpu_flash_erase(0, 4096);
+	opencpu_flash_write(0, (uint8_t *)&value, 2);
+}
+
 void HalPoll(void)
 {
 }
