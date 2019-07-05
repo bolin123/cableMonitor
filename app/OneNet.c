@@ -5,9 +5,10 @@
 #define ONE_NET_RESOURCEID_SENSOR_VALUE 5700
 #define ONE_NET_OBJID_FREQUENCY  3310
 #define ONE_NET_RESOURCEID_FREQUENCY 5825
-#define ONE_NET_CONNECT_LIFETIME 3600
+#define ONE_NET_CONNECT_LIFETIME (24*60*60)
 
 static bool g_onenetConnected = false;
+static HalTime_t g_updateTime;
 
 static char *num2String(uint32_t num)
 {
@@ -26,6 +27,7 @@ static void oneNetEventCallback(int event)
 		case CIS_EVENT_REG_SUCCESS: 
 		{
 			g_onenetConnected = true;
+			g_updateTime = HalTime();
 			HalPrint("onenet register done!\n");
 			break;
 		}
@@ -40,6 +42,12 @@ static void oneNetEventCallback(int event)
 			HalPrint("new firmware is online\n");
 			break;
 		}
+		case CIS_EVENT_CONNECT_FAILED:
+		case CIS_EVENT_REG_FAILED:
+		case CIS_EVENT_REG_TIMEOUT:
+		case CIS_EVENT_LIFETIME_TIMEOUT:
+			g_onenetConnected = false;
+			break;
 		default:
      		break;
 	}
@@ -145,7 +153,7 @@ int OneNetStartConnect(void)
     return -1;
 }
 
-void OneNetConnectUpdate(void)
+static void connectUpdate(void)
 {
     //opencpu_onenet_update(unsigned int lifetime, int flag);
 }

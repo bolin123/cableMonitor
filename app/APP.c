@@ -11,6 +11,7 @@
 
 #define APP_SOFTWARE_VERSION "1.0.1"
 
+
 static void mesgPrint(void)
 {
 	unsigned char modelVersion[16];
@@ -53,7 +54,7 @@ static void getCSQ(void)
     static HalTime_t lastTime = 0;
     int rssi, rxqual;
 
-    if(HalTimeHasPast(lastTime, 1000))
+    if(HalTimeHasPast(lastTime, SECONDS(10)))
     {
         opencpu_csq(&rssi, &rxqual);
         HalPrint("CSQ:%d,%d\n", rssi, rxqual);
@@ -115,7 +116,7 @@ static void networkHandle(void)
 
     if(HalNetOnline())
     {
-        if(!OneNetConnected() && HalTimeHasPast(startConnectTime, 3500))
+        if(!OneNetConnected() && HalTimeHasPast(startConnectTime, SECONDS(35)))
         {
             OneNetStartConnect();
             startConnectTime = HalTime();
@@ -126,7 +127,7 @@ static void networkHandle(void)
 static void valueReport(void)
 {
     static HalTime_t lastReportTime = 0;
-    if(OneNetConnected() && HalTimeHasPast(lastReportTime, 12000))
+    if(OneNetConnected() && HalTimeHasPast(lastReportTime, MINUTES(HalIntervalGet())))
     {
         OneNetDataReport("23.5");
         lastReportTime = HalTime();

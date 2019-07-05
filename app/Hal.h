@@ -9,6 +9,9 @@
 #define HAL_DEVICE_TYPE_TEMPERATURE
 //#define HAL_DEVICE_TYPE_GYROSCOPE
 
+#define SECONDS(x) ((x)*100)
+#define MINUTES(x) ((x)*SECONDS(60))
+
 #define HalTime_t TickType_t
 
 #define HalPrint HalUartPrintf
