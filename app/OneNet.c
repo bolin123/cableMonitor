@@ -26,7 +26,6 @@ static void oneNetEventCallback(int event)
 	{
 		case CIS_EVENT_REG_SUCCESS: 
 		{
-			g_onenetConnected = true;
 			g_updateTime = HalTime();
 			HalPrint("onenet register done!\n");
 			break;
@@ -102,6 +101,8 @@ static void oneNetObserveCallback(int mid, int observe, int objid, int insid, in
     //...
     HalPrint("%d_%d_%d: %d\n", objid, insid, resid, observe);//对应的objid被observe后方可notify上报
     opencpu_onenet_result(mid, RESULT_205_CONTENT, 1);//操作正确完成返回204
+    
+	g_onenetConnected = true;
 }
 
 static void oneNetParameterCallback(int mid,int objid, int insid, int resid, int len, char *parameter)

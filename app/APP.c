@@ -11,6 +11,8 @@
 
 #define APP_SOFTWARE_VERSION "1.0.1"
 
+static bool g_startSleep = false;
+static HalTime_t g_startSleepTime;
 
 static void mesgPrint(void)
 {
@@ -42,11 +44,12 @@ static void fallSleep(void)
 {
 	HalPrint("fallSleep...\n");
 	g_sleep = true;
-	opencpu_rtc_timer_create(&g_rtcHandle, 200, false, rtcTimerCallback);
+	opencpu_rtc_timer_create(&g_rtcHandle, 3000, false, rtcTimerCallback);
 	opencpu_rtc_timer_start(g_rtcHandle);
 
 	opencpu_unlock_light_sleep();
-	while(g_sleep);
+	opencpu_entersleep_mode();
+	while(1);
 }
 
 static void getCSQ(void)
@@ -110,12 +113,33 @@ void APPInitialize(void)
     //OneNetCreate();
 }
 
+static void setSleepMode(void)
+{
+	static bool set = false;
+
+	if(!set)
+	{
+		HalLog("");
+		ril_power_saving_mode_setting_req_t psm_req1;
+		psm_req1.mode=1;
+		psm_req1.req_prdc_rau=NULL;
+		psm_req1.req_gprs_rdy_tmr=NULL;
+		psm_req1.req_prdc_tau="00101011";
+		psm_req1.req_act_time="00100100";
+		 
+		opencpu_set_psmparam(&psm_req1);
+		
+		set = true;
+	}
+}
+
 static void networkHandle(void)
 {
     static HalTime_t startConnectTime = 0;
 
     if(HalNetOnline())
     {
+    	setSleepMode();
         if(!OneNetConnected() && HalTimeHasPast(startConnectTime, SECONDS(35)))
         {
             OneNetStartConnect();
@@ -124,13 +148,35 @@ static void networkHandle(void)
     }
 }
 
+static void startSleep(void)
+{
+	g_startSleep = true;
+	g_startSleepTime = HalTime();
+	HalLog("");
+
+	ril_power_saving_mode_setting_rsp_t psm_rsp1;
+	opencpu_get_psmparam(&psm_rsp1);
+	HalPrint("PSM:%d,%s,%s,%s,%s\n",psm_rsp1.mode,psm_rsp1.req_prdc_rau,
+	              psm_rsp1.req_gprs_rdy_tmr,psm_rsp1.req_prdc_tau,psm_rsp1.req_act_time);
+}
+
+static void sleepHandle(void)
+{
+	if(g_startSleep && HalTimeHasPast(g_startSleepTime, SECONDS(15)))
+	{
+		g_startSleep = false;
+		fallSleep();
+	}
+}
+
 static void valueReport(void)
 {
     static HalTime_t lastReportTime = 0;
-    if(OneNetConnected() && HalTimeHasPast(lastReportTime, MINUTES(HalIntervalGet())))
+    if(!g_startSleep && OneNetConnected())
     {
         OneNetDataReport("23.5");
-        lastReportTime = HalTime();
+        //lastReportTime = HalTime();//pdMS_TO_TICKS
+        startSleep();
     }
 }
 
@@ -140,6 +186,7 @@ void APPPoll(void)
 	networkHandle();
 	OneNetPoll();
 	getCSQ();
+	sleepHandle();
 }
 
 void app_task_main(void)
