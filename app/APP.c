@@ -13,6 +13,8 @@
 
 static bool g_startSleep = false;
 static HalTime_t g_startSleepTime;
+uint32_t g_rtcHandle;
+static volatile bool g_sleep = false;
 
 static void mesgPrint(void)
 {
@@ -30,7 +32,7 @@ static void mesgPrint(void)
 	HalPrint("Report Interval: %d min\n", HalIntervalGet());
 	HalPrint("----------------------------\n");	
 }
-static volatile bool g_sleep = false;
+
 static void rtcTimerCallback()
 {
 	HalPrint("rtc timer expires\n");
@@ -39,8 +41,7 @@ static void rtcTimerCallback()
 	g_sleep = false;
 }
 
-uint32_t g_rtcHandle;
-static void fallSleep(void)
+static void fallSleep(void)  //休眠函数
 {
 	HalPrint("fallSleep...\n");
 	g_sleep = true;
@@ -48,9 +49,50 @@ static void fallSleep(void)
 	opencpu_rtc_timer_start(g_rtcHandle);
 
 	opencpu_unlock_light_sleep();
-	opencpu_entersleep_mode();
-	while(1);
+	//opencpu_entersleep_mode();
+	while(1)//阻塞等待休眠...
+	{
+        vTaskDelay(10);
+	}
 }
+
+static void setSleepMode(void) //设置休眠模式
+{
+	static bool set = false;
+
+	if(!set)
+	{
+		HalLog("");
+		//打开WAKEUP_OUT功能
+		opencpu_set_cmsysctrl(1, 1, 0, 0, 0, 0);
+		HalPrint("WAKEUP_OUT ok\n");
+		HalPrint("open sleep!\n");
+
+		//关闭EDRX
+		opencpu_set_edrx(0, 5, "0101");
+		HalPrint("edrx set close ok\n");
+		
+        //设置PSM,该项功能仅针对APN为cmnbiot才允许设置，设置的值过小有可能当地基站不支持，可以尝试设置大一点
+        ril_power_saving_mode_setting_req_t psm_req1;
+        psm_req1.mode=1;
+        psm_req1.req_prdc_rau=NULL;
+        psm_req1.req_gprs_rdy_tmr=NULL;
+        psm_req1.req_prdc_tau="01010000";
+        //t3324设置为10秒
+        psm_req1.req_act_time="00000101";
+        opencpu_set_psmparam(&psm_req1);
+        HalPrint("psm set ok\n");
+
+        //查询核心网生效的T3324,T3412查询不到
+		ril_eps_network_registration_status_rsp_t param;
+        opencpu_cereg_excute(4);
+        opencpu_cereg_read(&param);
+        HalPrint("+CEREG:%d,%d\n",param.stat,param.active_time);
+		
+		set = true;
+	}
+}
+
 
 static void getCSQ(void)
 {
@@ -113,26 +155,6 @@ void APPInitialize(void)
     //OneNetCreate();
 }
 
-static void setSleepMode(void)
-{
-	static bool set = false;
-
-	if(!set)
-	{
-		HalLog("");
-		ril_power_saving_mode_setting_req_t psm_req1;
-		psm_req1.mode=1;
-		psm_req1.req_prdc_rau=NULL;
-		psm_req1.req_gprs_rdy_tmr=NULL;
-		psm_req1.req_prdc_tau="00101011";
-		psm_req1.req_act_time="00100100";
-		 
-		opencpu_set_psmparam(&psm_req1);
-		
-		set = true;
-	}
-}
-
 static void networkHandle(void)
 {
     static HalTime_t startConnectTime = 0;
@@ -158,6 +180,11 @@ static void startSleep(void)
 	opencpu_get_psmparam(&psm_rsp1);
 	HalPrint("PSM:%d,%s,%s,%s,%s\n",psm_rsp1.mode,psm_rsp1.req_prdc_rau,
 	              psm_rsp1.req_gprs_rdy_tmr,psm_rsp1.req_prdc_tau,psm_rsp1.req_act_time);
+
+    int temp_type;
+    unsigned char temp_value[10];
+    opencpu_read_edrx(&temp_type,temp_value);		
+    HalPrint("eDRX type:%d,value:%s\n",temp_type,temp_value);
 }
 
 static void sleepHandle(void)
