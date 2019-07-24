@@ -8,6 +8,7 @@
 #include "other.h"
 #include "opencpu_onenet.h"
 #include "OneNet.h"
+#include "Accel.h"
 
 #define APP_SOFTWARE_VERSION "1.0.1"
 
@@ -151,6 +152,7 @@ void APPInitialize(void)
 	
     opencpu_lock_light_sleep();
 	getICCID();
+	AccelInit();
     OneNetInitialize();
     //OneNetCreate();
 }
