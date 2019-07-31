@@ -31,15 +31,29 @@ void AccelStandby(void)
 
 int AccelInit(void)
 {
-    uint8_t id = 0;
+    uint8_t id[3] = {0};
     AccelRegSet_t data;
     
     opencpu_i2c_init();
-    opencpu_i2c_set_freq(HAL_I2C_FREQUENCY_100K);
-    opencpu_i2c_write_read(ACCEL_IIC_ADDR, MMA8451_WHO_AM_I, &id, 1);
-    
-    HalLog("id = %02x", id);
-    if(id == ACCEL_MMA8451_ID)
+    opencpu_i2c_set_freq(HAL_I2C_FREQUENCY_50K);
+	#if 0
+	data.reg = MMA8451_CTRL_REG1;
+    data.value = 0x01;
+	opencpu_i2c_write(ACCEL_IIC_ADDR, (uint8_t *)&data, sizeof(AccelRegSet_t));
+    opencpu_delay_ms(100);
+	data.reg = MMA8451_CTRL_REG2;
+    data.value = 0x02;
+    opencpu_i2c_write(ACCEL_IIC_ADDR, (uint8_t *)&data, sizeof(AccelRegSet_t));
+    opencpu_delay_ms(100);
+	data.reg = MMA8451_XYZ_DATA_CFG;
+    data.value = 0x10;
+    opencpu_i2c_write(ACCEL_IIC_ADDR, (uint8_t *)&data, sizeof(AccelRegSet_t));
+    opencpu_i2c_write_read(ACCEL_IIC_ADDR, MMA8451_WHO_AM_I, id, 1);
+    #endif
+	
+    opencpu_i2c_write_read(ACCEL_IIC_ADDR, MMA8451_WHO_AM_I, id, 1);
+    HalLog("id = %02x", id[0]);
+    if(id[0] == ACCEL_MMA8451_ID)
     {
         //reset 
         data.reg = MMA8451_CTRL_REG2;
