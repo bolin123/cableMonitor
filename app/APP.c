@@ -9,6 +9,7 @@
 #include "opencpu_onenet.h"
 #include "OneNet.h"
 #include "Accel.h"
+#include "Temp.h"
 
 #define APP_SOFTWARE_VERSION "1.0.1"
 
@@ -40,14 +41,13 @@ static void rtcTimerCallback()
 	opencpu_lock_light_sleep();
 	
 	g_sleep = false;
+	HalReboot();
 }
 
 static void fallSleep(void)  //休眠函数
 {
 	HalPrint("fallSleep...\n");
 	g_sleep = true;
-	opencpu_rtc_timer_create(&g_rtcHandle, 3000, false, rtcTimerCallback);
-	opencpu_rtc_timer_start(g_rtcHandle);
 
 	opencpu_unlock_light_sleep();
 	//opencpu_entersleep_mode();
@@ -99,11 +99,16 @@ static void getCSQ(void)
 {
     static HalTime_t lastTime = 0;
     int rssi, rxqual;
+	int16_t *axis;
 
     if(HalTimeHasPast(lastTime, SECONDS(10)))
     {
         opencpu_csq(&rssi, &rxqual);
         HalPrint("CSQ:%d,%d\n", rssi, rxqual);
+		
+		axis = AccelReadAxis();
+		HalPrint("x = %d, y = %d, z = %d\n", axis[0], axis[1], axis[2]);
+		HalPrint("temp = %d\n", TempGetValue());
         lastTime = HalTime();
     }
 }
@@ -138,6 +143,7 @@ static void getICCID(void)
 
 void APPInitialize(void)
 {
+	int ret;
 	HalInitialize();
 	mesgPrint();
 	if(opencpu_is_boot_from_sleep()==1)
@@ -151,10 +157,14 @@ void APPInitialize(void)
 	}
 	
     opencpu_lock_light_sleep();
+	opencpu_rtc_timer_create(&g_rtcHandle, 3000, false, rtcTimerCallback);
+	opencpu_rtc_timer_start(g_rtcHandle);
 	getICCID();
-	AccelInit();
+	ret = AccelInit();
+	TempInit();
     OneNetInitialize();
     //OneNetCreate();
+    HalLog("ret = %d", ret);
 }
 
 static void networkHandle(void)
@@ -166,6 +176,7 @@ static void networkHandle(void)
     	setSleepMode();
         if(!OneNetConnected() && HalTimeHasPast(startConnectTime, SECONDS(35)))
         {
+        	OneNetClose();
             OneNetStartConnect();
             startConnectTime = HalTime();
         }

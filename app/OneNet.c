@@ -7,8 +7,16 @@
 #define ONE_NET_RESOURCEID_FREQUENCY 5825
 #define ONE_NET_CONNECT_LIFETIME (24*60*60)
 
+typedef enum
+{
+	ONENET_CONNECT_STATUS_UNKOWN = 0,
+	ONENET_CONNECT_STATUS_CONNECT,
+	ONENET_CONNECT_STATUS_DISCONNECT,
+}OneNetConnectStatus_t;
+
 static bool g_onenetConnected = false;
 static HalTime_t g_updateTime;
+//static OneNetConnectStatus_t g_connStatus = ONENET_CONNECT_STATUS_UNKOWN;
 
 static char *num2String(uint32_t num)
 {
@@ -33,6 +41,7 @@ static void oneNetEventCallback(int event)
 		case CIS_EVENT_UNREG_DONE:
 		{
 			g_onenetConnected = false;
+			//g_connStatus = ONENET_CONNECT_STATUS_DISCONNECT;
 			HalPrint("onenet register failed\n");
 			break;
 		}
@@ -41,10 +50,14 @@ static void oneNetEventCallback(int event)
 			HalPrint("new firmware is online\n");
 			break;
 		}
+		case CIS_EVENT_CONNECT_SUCCESS:
+			//g_connStatus = ONENET_CONNECT_STATUS_CONNECT;
+			break;
 		case CIS_EVENT_CONNECT_FAILED:
 		case CIS_EVENT_REG_FAILED:
 		case CIS_EVENT_REG_TIMEOUT:
 		case CIS_EVENT_LIFETIME_TIMEOUT:
+			//g_connStatus = ONENET_CONNECT_STATUS_DISCONNECT;
 			g_onenetConnected = false;
 			break;
 		default:
@@ -111,9 +124,36 @@ static void oneNetParameterCallback(int mid,int objid, int insid, int resid, int
     //...
     opencpu_onenet_result(mid, RESULT_204_CHANGED, 0);//操作正确完成返回204
 }
-
+/*
+static void onenetStatusQuery(void)
+{
+	int result;
+	static HalTime_t queryTime;
+	if(g_connStatus == ONENET_CONNECT_STATUS_UNKOWN && HalNetOnline())
+	{
+		if(HalTimeHasPast(queryTime, SECONDS(20)))
+		{
+			result = opencpu_onenet_is_open();
+			if(result < 0)
+			{
+				// TODO: error
+				HalLog("err: %d", result);
+			}
+			else 
+			{
+				if(result == 600)
+				{
+					g_connStatus = ONENET_CONNECT_STATUS_DISCONNECT;
+				}
+			}
+			queryTime = HalTime();
+		}
+	}
+}
+*/
 bool OneNetConnected(void)
 {
+    //return g_connStatus == ONENET_CONNECT_STATUS_CONNECT;
     return g_onenetConnected;
 }
 
@@ -179,7 +219,6 @@ void OneNetCreate(void)
 	#ifdef HAL_DEVICE_TYPE_TEMPERATURE
 	HalLog("add obj");
    	opencpu_onenet_add_obj(ONE_NET_OBJID_TEMPERATURE, 1, "1", 0, 0);
-	//opencpu_onenet_discover(ONE_NET_OBJID_TEMPERATURE, 9, "5700;5601");
     opencpu_onenet_discover(ONE_NET_OBJID_TEMPERATURE, 4, num2String(ONE_NET_RESOURCEID_SENSOR_VALUE));//返回将用到的资源列表
 	opencpu_onenet_add_obj(ONE_NET_OBJID_FREQUENCY, 1, "1", 0, 0);
     opencpu_onenet_discover(ONE_NET_OBJID_FREQUENCY, 4, num2String(ONE_NET_RESOURCEID_FREQUENCY));//返回将用到的资源列表
@@ -195,5 +234,6 @@ void OneNetInitialize(void)
 
 void OneNetPoll(void)
 {
+	//onenetStatusQuery();
 }
 
