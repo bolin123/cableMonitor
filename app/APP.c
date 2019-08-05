@@ -108,7 +108,7 @@ static void getCSQ(void)
 		
 		axis = AccelReadAxis();
 		HalPrint("x = %d, y = %d, z = %d\n", axis[0], axis[1], axis[2]);
-		HalPrint("temp = %d\n", TempGetValue());
+		HalPrint("temp = %.1f\n", TemperatureValueExchange(TemperatureGetValue()));
         lastTime = HalTime();
     }
 }
@@ -161,7 +161,10 @@ void APPInitialize(void)
 	opencpu_rtc_timer_start(g_rtcHandle);
 	getICCID();
 	ret = AccelInit();
-	TempInit();
+	TemperatureInit();
+    TemperatureGetValue();
+    TemperatureGetValue();
+    TemperatureGetValue();
     OneNetInitialize();
     //OneNetCreate();
     HalLog("ret = %d", ret);
