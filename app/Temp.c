@@ -12,7 +12,7 @@
 {
 	hal_gpio_data_t iodata;
 	hal_gpio_get_input(TEMP_18B20_DQ_PIN, &iodata);	
-	return iodata;
+	return (iodata == HAL_GPIO_DATA_HIGH);
 }
  
 static int tempReset(void)
@@ -20,7 +20,7 @@ static int tempReset(void)
     uint8_t retry = 0;
     TEMP_18B20_DQ_OUTPUT();             //SET PG11 OUTPUT
     TEMP_18B20_DQ_SET_LEVEL(0);         //拉低DQ
-    opencpu_delay_us(500);                     //拉低 > 480us 
+    opencpu_delay_us(485);                     //拉低 > 480us 
     TEMP_18B20_DQ_INPUT();              //SET PG11 INPUT    
     opencpu_delay_us(5);
     while (TEMP_18B20_DQ_GET_LEVEL() && retry < 60)//wait 15~60us
@@ -66,9 +66,9 @@ static int tempReset(void)
      uint8_t mask;
      uint8_t data = 0x00;
      /*
-     * 所有的读时隙必须至少有60us的持续时间
-     * 相邻两个读时隙必须要有最少1us的恢复时间
-     * 所有的读时隙都由拉低总线，持续至少1us后再释放总线
+     * 所有的读时隙必须至少有60us的持续时�?
+     * 相邻两个读时隙必须要有最�?us的恢复时�?
+     * 所有的读时隙都由拉低总线，持续至�?us后再释放总线
      */
 #if 1
      for(mask = 0x01; mask != 0; mask <<= 1) 
@@ -120,16 +120,16 @@ static int tempReset(void)
  {             
      uint8_t i;
      /*
-     * 写时隙必须有最少60us的持续时间(60~120)
-     * 写1时隙，在拉低总线后主机必须在15μs内释放总线|_<15_|
-     * 写0时隙，在拉低总线后主机必须继续拉低总线以满足时隙持续时间的要求(至少60μs)
-     * 相邻两个写时隙必须要有最少1us的恢复时间
+     * 写时隙必须有最�?0us的持续时�?60~120)
+     * �?时隙，在拉低总线后主机必须在15μs内释放总线|_<15_|
+     * �?时隙，在拉低总线后主机必须继续拉低总线以满足时隙持续时间的要求(至少60μs)
+     * 相邻两个写时隙必须要有最�?us的恢复时�?
      */
      TEMP_18B20_DQ_OUTPUT();
      for (i = 0; i < 8; i++) 
      {
          TEMP_18B20_DQ_SET_LEVEL(1); //idle
-         opencpu_delay_us(8);               //最少1us的恢复时间
+         opencpu_delay_us(8);               //最�?us的恢复时�?
          TEMP_18B20_DQ_SET_LEVEL(0); //start
          opencpu_delay_us(8);              //t1 < 15us    
          TEMP_18B20_DQ_SET_LEVEL(cmd & 0x01);
@@ -172,7 +172,7 @@ static int tempReset(void)
  
  uint16_t TemperatureGetValue(void)
  {
-#if 1
+#if 0
      uint8_t tl;
      uint8_t i;
      uint16_t value = 0;
@@ -209,7 +209,7 @@ static int tempReset(void)
     #else
      uint8_t tl;
      //tempReset();
-     //tempReadByte();
+     tempReadByte();
      //tempWriteByte(0xcc);
      //tempWriteByte(0xbe);        // convert            
      //tl = tempReadByte();
@@ -225,8 +225,8 @@ static int tempReset(void)
      // 获取温度的实际数值，不包含符号位
      dat = (temp >> 4) & 0x7F;                         //提取整数部分
      dat += (float)(temp&0x0F) / 16;                 //提取小数部分
-     // 判断温度的符号
-     if (0 != (temp & 0xF800))   //判断符号为，全为1表示零下温度值
+     // 判断温度的符�?
+     if (0 != (temp & 0xF800))   //判断符号为，全为1表示零下温度�?
      {                      
          return -dat;
      } 
@@ -245,13 +245,13 @@ void TemperatureInit(void)
 #if 1
     ret = tempReset();
     tempWriteByte(0xCC);                        //跳过ROM
-    // 设置配置寄存器，精确到9Bit即0.5C'
-    tempWriteByte(0x4E);                        //设置暂存器指令
+    // 设置配置寄存器，精确�?Bit�?.5C'
+    tempWriteByte(0x4E);                        //设置暂存器指�?
     tempWriteByte(0xFF);                        //TH
     tempWriteByte(0xFF);                        //TL
-    tempWriteByte(ACCURACY);                        //config寄存器
+    tempWriteByte(ACCURACY);                        //config寄存�?
 
-    tempWriteByte(0x44);                        //启动一次温度转换
+    tempWriteByte(0x44);                        //启动一次温度转�?
 	HalLog("ret = %d", ret);
     #endif
 }
@@ -384,8 +384,8 @@ void TemperatureInit(void)
 	 // 获取温度的实际数值，不包含符号位
 	 dat = (temp >> 4) & 0x7F;						   //提取整数部分
 	 dat += (float)(temp&0x0F) / 16;				 //提取小数部分
-	 // 判断温度的符号
-	 if (0 != (temp & 0xF800))	 //判断符号为，全为1表示零下温度值
+	 // 判断温度的符�?
+	 if (0 != (temp & 0xF800))	 //判断符号为，全为1表示零下温度�?
 	 {						
 		 return -dat;
 	 } 
@@ -402,13 +402,13 @@ void TemperatureInit(void)
 	TEMP_18B20_DQ_SET_LEVEL(0);
 	tempReset();
 	tempWriteByte(0xCC);						 //跳过ROM
-	// 设置配置寄存器，精确到9Bit即0.5C'
-	tempWriteByte(0x4E);						 //设置暂存器指令
+	// 设置配置寄存器，精确�?Bit�?.5C'
+	tempWriteByte(0x4E);						 //设置暂存器指�?
 	tempWriteByte(0xFF);						 //TH
 	tempWriteByte(0xFF);						 //TL
-	tempWriteByte(ACCURACY);						 //config寄存器
+	tempWriteByte(ACCURACY);						 //config寄存�?
 
-	tempWriteByte(0x44);						 //启动一次温度转换
+	tempWriteByte(0x44);						 //启动一次温度转�?
  }
 
 void TemperaturePoll(void)
@@ -434,7 +434,7 @@ static int DQ_GET_LEVEL(void)
 	return 0;
 }
 /**************************************
-复位DS18B20,并检测设备是否存在
+复位DS18B20,并检测设备是否存�?
 **************************************/
 static int DS18B20Reset(void)
 {
@@ -461,9 +461,9 @@ static int DS18B20Reset(void)
 	int ret = -1;
 	DQ_DIRCT_OUTPUT();
 	DQ_SET_LEVEL(0); //单片机拉低总线
-	opencpu_opencpu_delay_us(750); //精确延时，维持至少480us
+	opencpu_opencpu_delay_us(750); //精确延时，维持至�?80us
 	DQ_SET_LEVEL(1); //释放总线，即拉高了总线
-	opencpu_opencpu_delay_us(15); //此处延时有足够，确保能让DS18B20发出存在脉冲。
+	opencpu_opencpu_delay_us(15); //此处延时有足够，确保能让DS18B20发出存在脉冲�?
 	DQ_DIRCT_INPUT();
 	do
 	{
@@ -483,7 +483,7 @@ static int DS18B20Reset(void)
 }
  
 /**************************************
-从DS18B20读1字节数据
+从DS18B20�?字节数据
 **************************************/
 static uint8_t DS18B20ReadByte(void)
 {
@@ -504,7 +504,7 @@ static uint8_t DS18B20ReadByte(void)
 		{
 			dat |= 0x80;        //读取数据
 		}
-        opencpu_opencpu_delay_us(60);               //等待时间片结束
+        opencpu_opencpu_delay_us(60);               //等待时间片结�?
         DQ_DIRCT_OUTPUT();
 		DQ_SET_LEVEL(1);
 		opencpu_opencpu_delay_us(2);
@@ -514,7 +514,7 @@ static uint8_t DS18B20ReadByte(void)
 }
  
 /**************************************
-向DS18B20写1字节数据
+向DS18B20�?字节数据
 **************************************/
 static void DS18B20WriteByte(uint8_t dat)
 {
@@ -530,8 +530,8 @@ static void DS18B20WriteByte(uint8_t dat)
         opencpu_opencpu_delay_us(2);                //延时等待
         DQ_SET_LEVEL(value & 0x01);
 		value = value >> 1;
-        opencpu_opencpu_delay_us(55);               //等待时间片结束
-        DQ_SET_LEVEL(1);                     //恢复数据线
+        opencpu_opencpu_delay_us(55);               //等待时间片结�?
+        DQ_SET_LEVEL(1);                     //恢复数据�?
         opencpu_opencpu_delay_us(2);                //恢复延时
     }
 }
@@ -545,7 +545,7 @@ short TempGetValue(void)
 	result = DS18B20Reset();				//设备复位
 	HalLog("reset result = %d", result);
 	DS18B20WriteByte(0xCC);		//跳过ROM命令
-	DS18B20WriteByte(0x44);		//开始转换命令
+	DS18B20WriteByte(0x44);		//开始转换命�?
 	#if 0
 	DQ_DIRCT_INPUT();
 	while (!DQ_GET_LEVEL())			    //等待转换完成

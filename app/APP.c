@@ -73,13 +73,13 @@ static void setSleepMode(void) //设置休眠模式
 		opencpu_set_edrx(0, 5, "0101");
 		HalPrint("edrx set close ok\n");
 		
-        //设置PSM,该项功能仅针对APN为cmnbiot才允许设置，设置的值过小有可能当地基站不支持，可以尝试设置大一点
+        //设置PSM,该项功能仅针对APN为cmnbiot才允许设置，设置的值过小有可能当地基站不支持，可以尝试设置大一�?
         ril_power_saving_mode_setting_req_t psm_req1;
         psm_req1.mode=1;
         psm_req1.req_prdc_rau=NULL;
         psm_req1.req_gprs_rdy_tmr=NULL;
         psm_req1.req_prdc_tau="01010000";
-        //t3324设置为10秒
+        //t3324设置�?0�?
         psm_req1.req_act_time="00000101";
         opencpu_set_psmparam(&psm_req1);
         HalPrint("psm set ok\n");
@@ -101,7 +101,7 @@ static void getCSQ(void)
     int rssi, rxqual;
 	int16_t *axis;
 
-    if(HalTimeHasPast(lastTime, SECONDS(10)))
+    if(HalTimeHasPast(lastTime, SECONDS(5)))
     {
         opencpu_csq(&rssi, &rxqual);
         HalPrint("CSQ:%d,%d\n", rssi, rxqual);
@@ -244,7 +244,7 @@ void app_task_main(void)
 }
 
 /*
- 新建opencpu任务，这个函数用户不可更改
+ 新建opencpu任务，这个函数用户不可更�?
 */
 void test_opencpu_start()
 {
