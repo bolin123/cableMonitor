@@ -9,7 +9,7 @@
 #include "opencpu_onenet.h"
 #include "OneNet.h"
 #include "Accel.h"
-#include "Temp.h"
+#include "Temperature.h"
 
 #define APP_SOFTWARE_VERSION "1.0.1"
 
@@ -100,6 +100,7 @@ static void getCSQ(void)
     static HalTime_t lastTime = 0;
     int rssi, rxqual;
 	int16_t *axis;
+    char tstr[8] = "";
 
     if(HalTimeHasPast(lastTime, SECONDS(5)))
     {
@@ -108,7 +109,10 @@ static void getCSQ(void)
 		
 		axis = AccelReadAxis();
 		HalPrint("x = %d, y = %d, z = %d\n", axis[0], axis[1], axis[2]);
-		HalPrint("temp = %.1f\n", TemperatureValueExchange(TemperatureGetValue()));
+
+        float temp = TemperatureGetValue();
+        sprintf(tstr, "%.1f", temp);
+		HalPrint("temp = %s\n", tstr);
         lastTime = HalTime();
     }
 }
@@ -162,9 +166,9 @@ void APPInitialize(void)
 	getICCID();
 	ret = AccelInit();
 	TemperatureInit();
-    TemperatureGetValue();
-    TemperatureGetValue();
-    TemperatureGetValue();
+    //TemperatureGetValue();
+    //TemperatureGetValue();
+    //TemperatureGetValue();
     OneNetInitialize();
     //OneNetCreate();
     HalLog("ret = %d", ret);
@@ -222,6 +226,7 @@ static void valueReport(void)
         startSleep();
     }
 }
+hal_uart_port_t  opencpu_exception_port = HAL_UART_0;
 
 void APPPoll(void)
 {

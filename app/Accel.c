@@ -13,24 +13,29 @@ int16_t *AccelReadAxis(void)
 {
     uint8_t value[6] = {0};
     static int16_t axisData[3];
+#if 0
 
     opencpu_i2c_write_read(ACCEL_IIC_ADDR, MMA8451_OUT_X_MSB, value, sizeof(value));
     axisData[0] = (int16_t)((value[0] << 8) | value[1]);
     axisData[1] = (int16_t)((value[2] << 8) | value[3]);    
     axisData[2] = (int16_t)((value[4] << 8) | value[5]);
+#endif
     return axisData;
 }
 
 void AccelStandby(void)
 {
+/*
     AccelRegSet_t data;
     data.reg = MMA8451_CTRL_REG1;
     data.value = 0x00;
     opencpu_i2c_write(ACCEL_IIC_ADDR, (uint8_t *)&data, sizeof(AccelRegSet_t));
+    */
 }
 
 int AccelInit(void)
 {
+#if 0
     uint8_t id[3] = {0};
     AccelRegSet_t data;
     
@@ -76,7 +81,7 @@ int AccelInit(void)
         opencpu_i2c_write(ACCEL_IIC_ADDR, (uint8_t *)&data, sizeof(AccelRegSet_t));
         return 0;
     }
-
+#endif
     return -1;
 }
 
