@@ -99,7 +99,6 @@ static void getCSQ(void)
 {
     static HalTime_t lastTime = 0;
     int rssi, rxqual;
-	int16_t *axis;
     char tstr[8] = "";
 
     if(HalTimeHasPast(lastTime, SECONDS(5)))
@@ -107,13 +106,24 @@ static void getCSQ(void)
         opencpu_csq(&rssi, &rxqual);
         HalPrint("CSQ:%d,%d\n", rssi, rxqual);
 		
-		axis = AccelReadAxis();
-		HalPrint("x = %d, y = %d, z = %d\n", axis[0], axis[1], axis[2]);
-
-        float temp = TemperatureGetValue();
-        sprintf(tstr, "%.1f", temp);
-		HalPrint("temp = %s\n", tstr);
         lastTime = HalTime();
+    }
+}
+
+static void getAccValue(void)
+{
+    static HalTime_t oldTime;
+	int16_t *axis;
+    if(HalTimeHasPast(oldTime, SECONDS(1)))
+    {
+        
+        //axis = AccelReadAxis();
+        //HalPrint("x = %d, y = %d, z = %d\n", axis[0], axis[1], axis[2]);
+        AccelGetAngle();
+        //float temp = TemperatureGetValue();
+        //sprintf(tstr, "%.1f", temp);
+        //HalPrint("temp = %s\n", tstr);
+        oldTime = HalTime();
     }
 }
 
@@ -165,7 +175,7 @@ void APPInitialize(void)
 	opencpu_rtc_timer_start(g_rtcHandle);
 	getICCID();
 	ret = AccelInit();
-	TemperatureInit();
+	//TemperatureInit();
     //TemperatureGetValue();
     //TemperatureGetValue();
     //TemperatureGetValue();
@@ -234,6 +244,7 @@ void APPPoll(void)
 	networkHandle();
 	OneNetPoll();
 	getCSQ();
+    getAccValue();
 	sleepHandle();
 }
 
