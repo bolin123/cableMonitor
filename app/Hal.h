@@ -6,8 +6,8 @@
 #include "FreeRTOS.h"
 #include "mpu_wrappers.h"
 
-#define HAL_DEVICE_TYPE_TEMPERATURE
-//#define HAL_DEVICE_TYPE_GYROSCOPE
+//#define HAL_DEVICE_TYPE_TEMPERATURE
+#define HAL_DEVICE_TYPE_GYROSCOPE
 
 #define SECONDS(x) ((x)*100)
 #define MINUTES(x) ((x)*SECONDS(60))

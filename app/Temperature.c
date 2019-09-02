@@ -57,5 +57,6 @@ int TemperatureInit(void)
     opencpu_i2c_write_read(TEMPERATURE_IIC_ADDR, 0x01, &config, 1);
 
     HalLog("config = %02x", config);
+    return 0;
 }
 

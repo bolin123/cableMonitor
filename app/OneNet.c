@@ -1,8 +1,14 @@
 #include "OneNet.h"
 
 #define ONE_NET_IP "183.230.40.39"
-#define ONE_NET_OBJID_TEMPERATURE  3303
+
+#ifdef HAL_DEVICE_TYPE_TEMPERATURE
+#define ONE_NET_OBJID_MAIN  3303 //Temperature
 #define ONE_NET_RESOURCEID_SENSOR_VALUE 5700
+#else
+#define ONE_NET_OBJID_MAIN  3313 //Accelerometer
+#define ONE_NET_RESOURCEID_SENSOR_VALUE 5700
+#endif
 #define ONE_NET_OBJID_FREQUENCY  3310
 #define ONE_NET_RESOURCEID_FREQUENCY 5825
 #define ONE_NET_CONNECT_LIFETIME (24*60*60)
@@ -76,15 +82,15 @@ static void oneNetReadCallback(int mid, int objid, int insid, int resid)
 {
     //TODO
     //...
-    //æ ¹æ®ä¼ å…¥çš„objid_insid_residå†³å®šéœ€ä¸Šä¼ çš„æ•°æ®
+    //¸ù¾İ´«ÈëµÄobjid_insid_resid¾ö¶¨ĞèÉÏ´«µÄÊı¾İ
     HalPrint("read:%d %d\n", objid, resid);
     if((objid == 3200) && (resid == 5750))
     {
-        opencpu_onenet_read(mid, objid, insid, resid, 1, "test read!", 1);//è¿”å›è¡¨ç¤ºè¯¥æ“ä½œç»“æœæ•°æ®,ç¤ºä¾‹èµ„æºç±»å‹ä¸ºstringå‹
+        opencpu_onenet_read(mid, objid, insid, resid, 1, "test read!", 1);//·µ»Ø±íÊ¾¸Ã²Ù×÷½á¹ûÊı¾İ,Ê¾Àı×ÊÔ´ÀàĞÍÎª
     }
     else
     {
-        opencpu_onenet_result(mid, RESULT_400_BADREQUEST, 0);//è¿”å›è¡¨ç¤ºè¯¥æ“ä½œç»“æœé”™è¯¯
+        opencpu_onenet_result(mid, RESULT_400_BADREQUEST, 0);//·µ»Ø±íÊ¾¸Ã²Ù×÷½á¹û´íÎó
     }
 }
 
@@ -97,7 +103,7 @@ static void oneNetWriteCallback(int mid, int objid,int insid, int resid, int typ
 	{
 		HalIntervalSet((uint16_t)atoi(data));
 	}
-    opencpu_onenet_result(mid, RESULT_204_CHANGED, 0);//æ“ä½œæ­£ç¡®å®Œæˆè¿”å›204
+    opencpu_onenet_result(mid, RESULT_204_CHANGED, 0);//²Ù×÷ÕıÈ·Íê³É·µ»Ø204
 }
 
 static void oneNetExecuteCallback(int mid, int objid, int insid, int resid, int len, char *data)
@@ -105,15 +111,15 @@ static void oneNetExecuteCallback(int mid, int objid, int insid, int resid, int 
     //TODO
     //...
     HalPrint("write:%d %s\n",len,data);
-    opencpu_onenet_result(mid, RESULT_204_CHANGED, 0);//æ“ä½œæ­£ç¡®å®Œæˆè¿”å›204
+    opencpu_onenet_result(mid, RESULT_204_CHANGED, 0);//²Ù×÷ÕıÈ·Íê³É·µ»Ø204
 }
 
 static void oneNetObserveCallback(int mid, int observe, int objid, int insid, int resid)
 {
     //TODO
     //...
-    HalPrint("%d_%d_%d: %d\n", objid, insid, resid, observe);//å¯¹åº”çš„objidè¢«observeåæ–¹å¯notifyä¸ŠæŠ¥
-    opencpu_onenet_result(mid, RESULT_205_CONTENT, 1);//æ“ä½œæ­£ç¡®å®Œæˆè¿”å›204
+    HalPrint("%d_%d_%d: %d\n", objid, insid, resid, observe);//¶ÔÓ¦µÄobjid±»observeºó·½¿ÉnotifyÉÏ±¨
+    opencpu_onenet_result(mid, RESULT_205_CONTENT, 1);//²Ù×÷ÕıÈ·Íê³É·µ»Ø204
     
 	g_onenetConnected = true;
 }
@@ -122,7 +128,7 @@ static void oneNetParameterCallback(int mid,int objid, int insid, int resid, int
 {
     //TODO
     //...
-    opencpu_onenet_result(mid, RESULT_204_CHANGED, 0);//æ“ä½œæ­£ç¡®å®Œæˆè¿”å›204
+    opencpu_onenet_result(mid, RESULT_204_CHANGED, 0);//²Ù×÷ÕıÈ·Íê³É·µ»Ø204
 }
 /*
 static void onenetStatusQuery(void)
@@ -164,9 +170,9 @@ void OneNetClose(void)
 
 void OneNetDataReport(char *data)
 {
-#ifdef HAL_DEVICE_TYPE_TEMPERATURE
+//#ifdef HAL_DEVICE_TYPE_TEMPERATURE
     HalLog("%s", data);
-    opencpu_onenet_notify(ONE_NET_OBJID_TEMPERATURE, 
+    opencpu_onenet_notify(ONE_NET_OBJID_MAIN, 
                         0, ONE_NET_RESOURCEID_SENSOR_VALUE, 
                         4, data, 
                         1, -1, 0);
@@ -178,8 +184,8 @@ void OneNetDataReport(char *data)
                         0, ONE_NET_RESOURCEID_FREQUENCY, 
                         1, buff, 
                         1, -1, 0);
-#else
-#endif
+//#else
+//#endif
 }
 
 int OneNetStartConnect(void)
@@ -214,16 +220,16 @@ void OneNetCreate(void)
 	callback.onDiscover = NULL;
 
 	HalLog("");
-	opencpu_onenet_init();//åˆå§‹åŒ–ä»»åŠ¡
-	opencpu_onenet_create(ONE_NET_IP, 1, &callback);//åˆ›å»ºè®¾å¤‡
-	#ifdef HAL_DEVICE_TYPE_TEMPERATURE
+	opencpu_onenet_init();//³õÊ¼»¯ÈÎÎñ
+	opencpu_onenet_create(ONE_NET_IP, 1, &callback);//´´½¨Éè±¸
+	//#ifdef HAL_DEVICE_TYPE_TEMPERATURE
 	HalLog("add obj");
-   	opencpu_onenet_add_obj(ONE_NET_OBJID_TEMPERATURE, 1, "1", 0, 0);
-    opencpu_onenet_discover(ONE_NET_OBJID_TEMPERATURE, 4, num2String(ONE_NET_RESOURCEID_SENSOR_VALUE));//è¿”å›å°†ç”¨åˆ°çš„èµ„æºåˆ—è¡¨
+   	opencpu_onenet_add_obj(ONE_NET_OBJID_MAIN, 1, "1", 0, 0);
+    opencpu_onenet_discover(ONE_NET_OBJID_MAIN, 4, num2String(ONE_NET_RESOURCEID_SENSOR_VALUE));//è¿?å°†?¨åˆ°çš„èµ„æº?—è?
 	opencpu_onenet_add_obj(ONE_NET_OBJID_FREQUENCY, 1, "1", 0, 0);
-    opencpu_onenet_discover(ONE_NET_OBJID_FREQUENCY, 4, num2String(ONE_NET_RESOURCEID_FREQUENCY));//è¿”å›å°†ç”¨åˆ°çš„èµ„æºåˆ—è¡¨
-    #else
-    #endif
+    opencpu_onenet_discover(ONE_NET_OBJID_FREQUENCY, 4, num2String(ONE_NET_RESOURCEID_FREQUENCY));//è¿?å°†?¨åˆ°çš„èµ„æº?—è?
+   // #else
+    //#endif
 
 }
 

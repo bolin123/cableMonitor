@@ -12,7 +12,7 @@ typedef struct
     uint8_t value;
 }AccelRegSet_t;
 
-void AccelGetAngle(void)
+float AccelGetAngle(void)
 {
     unsigned char AccData[6];
     short Xout_14_bit, Yout_14_bit, Zout_14_bit;
@@ -41,6 +41,7 @@ void AccelGetAngle(void)
     rvalue = (int16_t)(Roll * 10);
     HalPrint("pitch = %d.%d\n", (int16_t)(pvalue / 10), (uint16_t)pvalue % 10);
     HalPrint("roll = %d.%d\n", (int16_t)(rvalue / 10), (uint16_t)rvalue % 10);
+    return Pitch;
 
 }
 

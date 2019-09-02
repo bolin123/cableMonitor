@@ -39,7 +39,7 @@
 //Reserved								0x40-0x7F
 
 signed short *AccelReadAxis(void);
-void AccelGetAngle(void);
+float AccelGetAngle(void);
 int AccelInit(void);
 void AccelPoll(void);
 #endif

@@ -44,36 +44,36 @@ static void rtcTimerCallback()
 	HalReboot();
 }
 
-static void fallSleep(void)  //休眠函数
+static void fallSleep(void)  //休?�?��?
 {
 	HalPrint("fallSleep...\n");
 	g_sleep = true;
 
 	opencpu_unlock_light_sleep();
-	//opencpu_entersleep_mode();
-	while(1)//阻塞等待休眠...
+
+	while(1)//?��?等待休?�...
 	{
         vTaskDelay(10);
 	}
 }
 
-static void setSleepMode(void) //设置休眠模式
+static void setSleepMode(void) //设置休?�模�?
 {
 	static bool set = false;
 
 	if(!set)
 	{
 		HalLog("");
-		//打开WAKEUP_OUT功能
+		//?�开WAKEUP_OUT?�??
 		opencpu_set_cmsysctrl(1, 1, 0, 0, 0, 0);
 		HalPrint("WAKEUP_OUT ok\n");
 		HalPrint("open sleep!\n");
 
-		//关闭EDRX
+		//?��		
 		opencpu_set_edrx(0, 5, "0101");
 		HalPrint("edrx set close ok\n");
 		
-        //设置PSM,该项功能仅针对APN为cmnbiot才允许设置，设置的值过小有可能当地基站不支持，可以尝试设置大一�?
+        //设置PSM,该项?�?��??��?PN�?mnbiot?�?�许�
         ril_power_saving_mode_setting_req_t psm_req1;
         psm_req1.mode=1;
         psm_req1.req_prdc_rau=NULL;
@@ -84,8 +84,8 @@ static void setSleepMode(void) //设置休眠模式
         opencpu_set_psmparam(&psm_req1);
         HalPrint("psm set ok\n");
 
-        //查询核心网生效的T3324,T3412查询不到
-		ril_eps_network_registration_status_rsp_t param;
+        //?��		
+        ril_eps_network_registration_status_rsp_t param;
         opencpu_cereg_excute(4);
         opencpu_cereg_read(&param);
         HalPrint("+CEREG:%d,%d\n",param.stat,param.active_time);
@@ -174,13 +174,13 @@ void APPInitialize(void)
 	opencpu_rtc_timer_create(&g_rtcHandle, 3000, false, rtcTimerCallback);
 	opencpu_rtc_timer_start(g_rtcHandle);
 	getICCID();
-	ret = AccelInit();
-	//TemperatureInit();
-    //TemperatureGetValue();
-    //TemperatureGetValue();
-    //TemperatureGetValue();
+  
+#ifdef HAL_DEVICE_TYPE_TEMPERATURE
+    ret = TemperatureInit();
+#else
+    ret = AccelInit();
+#endif
     OneNetInitialize();
-    //OneNetCreate();
     HalLog("ret = %d", ret);
 }
 
@@ -228,10 +228,21 @@ static void sleepHandle(void)
 
 static void valueReport(void)
 {
+    float value;
+    char strValue[10] = "";
     static HalTime_t lastReportTime = 0;
+    
     if(!g_startSleep && OneNetConnected())
     {
-        OneNetDataReport("23.5");
+    
+#ifdef HAL_DEVICE_TYPE_TEMPERATURE
+        value = TemperatureGetValue();
+#else
+        value = AccelGetAngle();
+        AccelStandby();
+#endif
+        sprintf(strValue, "%.1f", value);
+        OneNetDataReport(strValue);
         //lastReportTime = HalTime();//pdMS_TO_TICKS
         startSleep();
     }
@@ -244,7 +255,7 @@ void APPPoll(void)
 	networkHandle();
 	OneNetPoll();
 	getCSQ();
-    getAccValue();
+    //getAccValue();
 	sleepHandle();
 }
 
@@ -260,8 +271,8 @@ void app_task_main(void)
 }
 
 /*
- 新建opencpu任务，这个函数用户不可更�?
-*/
+ ?�建opencpu任务�?这�
+ */
 void test_opencpu_start()
 {
 	 xTaskCreate(app_task_main,"opencpu",1024,NULL,TASK_PRIORITY_NORMAL,NULL);
